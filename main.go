@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"io/ioutil"
-	"log"
 )
 
 func main() {
@@ -16,11 +15,17 @@ type MyHandler struct {
 }
 
 func (this *MyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := "public" + req.URL.Path
+	path := "public"
+	if req.URL.Path == "/" {
+		path += "/index.html"
+	} else {
+		path += req.URL.Path
+	}
+
 	data, err := ioutil.ReadFile(string(path))
 
-	if err == nil {
 
+	if err == nil {
 		w.Write(data)
 	} else {
 		w.WriteHeader(404)
