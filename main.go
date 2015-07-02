@@ -10,7 +10,7 @@ func main() {
 		w.Header().Add("Content Type", "text/html")
 		tmpl, err := template.New("test").Parse(doc)
 		if err == nil {
-			tmpl.Execute(w, nil)
+			tmpl.Execute(w, r.URL.Path)
 		}
 	})
 	http.ListenAndServe(":8000", nil)
@@ -24,6 +24,7 @@ const doc  = `
 	</head>
 	<body>
 		<h1>heyhey</h1>
+		<h1>{{.}}</h1>
 	</body>
 </html>
 
