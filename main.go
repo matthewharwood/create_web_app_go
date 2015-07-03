@@ -3,51 +3,49 @@ package main
 import (
 	"net/http"
 	"text/template"
+	"os"
+
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
-		w.Header().Add("Content Type", "text/html")
-		templates := template.New("template")
-		templates.New("test").Parse(doc)
-		templates.New("header").Parse(header)
-		templates.New("footer").Parse(footer)
-		context := Context{
-			[3]string{"lemon", "apple", "banana"},
-			"the title",
+	templates := populateTemplate()
+	http.HandleFunc("/",
+		func(w http.ResponseWriter, req *http.Request){
+			requestedFile := req.URL.Path[1:]
+			template := templates.Lookup(requestedFile + ".html")
+			if template != nil {
+				template.Execute(w, nil)
+			} else {
+				w.WriteHeader(404)
+			}
 
-		}
-		templates.Lookup("test").Execute(w, context)
-
-	})
+		})
 	http.ListenAndServe(":8000", nil)
 }
 
-const doc = `
-{{template "header" .Message}}
-  <body>
-    <h1>List of Fruit</h1>
-    <ul>
-      {{range .Fruit}}
-      	<li>{{.}}</li>
-      {{end}}
-    </ul>
-  </body>
-{{template "footer"}}
-`
-const  header =  `
-    <body>
-		<h1>heyhey</h1>
-		<h1>{{.}}</h1>
-	</body>
-`
+func populateTemplate() *template.Template {
+	result := template.New("templates")
 
-const  footer = `
-   <p> i'm a footer</p>
-    </html>
-`
-type Context struct {
-	Fruit [3]string
-	Message string
+	basePath := "templates"
+	//opens the folder using the os
+	templateFolder, _ := os.Open(basePath)
+	// will close the opening of the templatefolder when populateTemplate is finished.
+	defer templateFolder.Close()
+
+	// reads all the file names in a folder
+	// -1 means until none left
+	templatePathRaw, _ := templateFolder.Readdir(-1)
+
+	//loops through the raw path strings and sets to a slice
+	//while adding the base path behind.
+	templatePaths := new([]string)
+	for _, pathInfo := range templatePathRaw {
+		*templatePaths = append(*templatePaths,
+			basePath + "/" + pathInfo.Name())
+	}
+
+	//helper in go to parse a set of files.
+	//uses ... to go through 1 by 1
+	result.ParseFiles(*templatePaths...)
+	return result
 }
-
